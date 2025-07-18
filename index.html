@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎨 Calmpng – Creative WebGL Designer Bot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0f0f0f;
+      color: #f1f1f1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      font-weight: 800;
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .prompt-box {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      resize: vertical;
+      padding: 1rem;
+      font-size: 1rem;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #f1f1f1;
+    }
+
+    button {
+      background: #ff4b2b;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #ff416c;
+    }
+
+    #canvas-holder {
+      margin-top: 2rem;
+      width: 100%;
+      max-width: 1000px;
+      border: 1px solid #333;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .loading {
+      font-size: 1rem;
+      color: #888;
+      margin-top: 1rem;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>Calmpng – Your AI WebGL Designer 🎨</h1>
+
+  <div class="prompt-box">
+    <textarea id="prompt" placeholder="Describe a design: e.g., 'A glitchy rotating 3D cube with a vaporwave aesthetic'"></textarea>
+    <button onclick="askCalmpng()">Generate with Calmpng</button>
+    <div id="status" class="loading"></div>
+  </div>
+
+  <div id="canvas-holder"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
+  <script>
+    let sketchInstance;
+
+    async function askCalmpng() {
+      const prompt = document.getElementById("prompt").value.trim();
+      const status = document.getElementById("status");
+      if (!prompt) {
+        status.innerText = "⚠️ Please enter a design prompt.";
+        return;
+      }
+
+      status.innerText = "⏳ Generating art with Calmpng...";
+
+      try {
+        const res = await fetch("https://1733e2dd-5c3c-4347-99ed-407154defbee-00-3m96p3i8r52a0.pike.replit.dev/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+
+        const data = await res.json();
+        if (data.code) {
+          if (sketchInstance) sketchInstance.remove();
+
+          const canvasDiv = document.getElementById("canvas-holder");
+          const userSketch = new Function("p", data.code);
+          sketchInstance = new p5(userSketch, canvasDiv);
+
+          status.innerText = "✅ Design rendered!";
+        } else {
+          status.innerText = "❌ Failed to get valid code.";
+        }
+      } catch (error) {
+        console.error(error);
+        status.innerText = "❌ Error connecting to backend.";
+      }
+    }
+  </script>
+
+</body>
+</html>
