@@ -2,102 +2,89 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Canvas Playground</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Groq-Powered Code Generator</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
+      font-family: 'Segoe UI', sans-serif;
       background: #111;
-      color: white;
-      margin: 0;
-      padding: 0;
+      color: #fff;
+      padding: 2rem;
     }
+
+    h1 {
+      color: #00ffcc;
+    }
+
+    textarea, input, button {
+      width: 100%;
+      margin: 1rem 0;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
     textarea {
-      width: 80%;
-      height: 100px;
-      margin-top: 20px;
-      font-size: 16px;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      background: #ff006e;
-      color: white;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    #output {
-      margin-top: 20px;
+      height: 180px;
+      background: #222;
       color: #0f0;
     }
-    canvas {
-      display: block;
-      margin: 20px auto;
-      border: 2px solid #fff;
+
+    button {
+      background: #00ffcc;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #result {
+      white-space: pre-wrap;
+      background: #1e1e1e;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
-  <h1>🧠 AI Canvas with Groq + p5.js</h1>
+  <h1>🧠 Groq LLaMA3 Code Generator</h1>
+  <input type="text" id="promptInput" placeholder="Enter your prompt (e.g., p5.js animation)..." />
+  <button onclick="generateCode()">Generate Code</button>
 
-  <textarea id="promptInput" placeholder="Describe a visual like: 'draw bouncing balls with gravity'"></textarea><br />
-  <button onclick="generate()">Generate Canvas</button>
-
-  <div id="output">Waiting for your prompt...</div>
+  <div id="result">Your generated code will appear here...</div>
 
   <script>
-    const BACKEND_URL = "https://1733e2dd-5c3c-4347-99ed-407154defbee-00-3m96p3i8r52a0.pike.replit.dev/generate"; // Replace with your actual backend URL
+    async function generateCode() {
+      const prompt = document.getElementById("promptInput").value;
+      const resultDiv = document.getElementById("result");
 
-    let sketchCanvas = null;
-
-    async function generate() {
-      const prompt = document.getElementById("promptInput").value.trim();
-      if (!prompt) {
-        alert("Please enter a prompt.");
+      if (!prompt.trim()) {
+        resultDiv.textContent = "Please enter a prompt!";
         return;
       }
 
-      document.getElementById("output").textContent = "⏳ Generating with Groq...";
+      resultDiv.textContent = "⏳ Generating code...";
 
       try {
-        const res = await fetch(BACKEND_URL, {
+        const response = await fetch("https://1733e2dd-5c3c-4347-99ed-407154defbee-00-3m96p3i8r52a0.pike.replit.dev/generate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ prompt })
         });
 
-        const data = await res.json();
+        const data = await response.json();
+
         if (data.code) {
-          document.getElementById("output").textContent = "✅ Loaded. Executing code...";
-          runP5Sketch(data.code);
+          resultDiv.textContent = data.code;
         } else {
-          document.getElementById("output").textContent = "❌ Failed to generate code.";
+          resultDiv.textContent = `❌ Error: ${data.error || 'Unknown error'}`;
         }
-      } catch (err) {
-        console.error(err);
-        document.getElementById("output").textContent = "❌ Error connecting to server.";
+      } catch (error) {
+        resultDiv.textContent = `❌ Fetch error: ${error.message}`;
       }
-    }
-
-    function runP5Sketch(code) {
-      // Remove previous canvas if any
-      if (sketchCanvas) {
-        sketchCanvas.remove();
-      }
-
-      // Create a new sketch
-      const sketch = new Function('p', `
-        ${code}
-      `);
-
-      sketchCanvas = new p5(sketch);
     }
   </script>
 </body>
