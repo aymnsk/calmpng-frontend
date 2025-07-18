@@ -2,131 +2,103 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Calmpng - AI p5.js Designer</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Canvas Playground</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
   <style>
     body {
-      margin: 0;
-      font-family: 'Fira Code', monospace;
-      background: #0d1117;
-      color: #c9d1d9;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-    }
-
-    h1 {
-      color: #58a6ff;
-      margin-bottom: 1rem;
-    }
-
-    #prompt-input {
-      width: 100%;
-      max-width: 500px;
-      padding: 0.8rem;
-      font-size: 1rem;
-      background: #161b22;
-      color: #c9d1d9;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-    }
-
-    button {
-      padding: 0.7rem 1.5rem;
-      font-size: 1rem;
-      background-color: #238636;
-      border: none;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #111;
       color: white;
-      border-radius: 6px;
+      margin: 0;
+      padding: 0;
+    }
+    textarea {
+      width: 80%;
+      height: 100px;
+      margin-top: 20px;
+      font-size: 16px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background: #ff006e;
+      color: white;
       cursor: pointer;
-      margin-bottom: 2rem;
+      margin-top: 10px;
     }
-
-    #code-output {
-      width: 100%;
-      max-width: 700px;
-      background: #161b22;
-      padding: 1rem;
-      border-radius: 10px;
-      border: 1px solid #30363d;
-      white-space: pre-wrap;
-      overflow-x: auto;
-      margin-bottom: 2rem;
+    #output {
+      margin-top: 20px;
+      color: #0f0;
     }
-
-    iframe {
-      width: 700px;
-      height: 400px;
-      border: 2px solid #30363d;
-      border-radius: 10px;
-      background: white;
-    }
-
-    @media (max-width: 768px) {
-      iframe {
-        width: 100%;
-        height: 300px;
-      }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      border: 2px solid #fff;
     }
   </style>
 </head>
 <body>
+  <h1>🧠 AI Canvas with Groq + p5.js</h1>
 
-  <h1>🧠 Calmpng: AI p5.js Designer</h1>
-  <input type="text" id="prompt-input" placeholder="Describe your idea... (e.g., futuristic galaxy swirl with WebGL)" />
-  <button onclick="generateCode()">✨ Generate</button>
+  <textarea id="promptInput" placeholder="Describe a visual like: 'draw bouncing balls with gravity'"></textarea><br />
+  <button onclick="generate()">Generate Canvas</button>
 
-  <div id="code-output"></div>
-
-  <iframe id="canvas-frame"></iframe>
+  <div id="output">Waiting for your prompt...</div>
 
   <script>
-    const REPLIT_API = 'https://1733e2dd-5c3c-4347-99ed-407154defbee-00-3m96p3i8r52a0.pike.replit.dev/generate';
+    const BACKEND_URL = "https://<your-replit-backend-url>/generate"; // Replace with your actual backend URL
 
-    async function generateCode() {
-      const prompt = document.getElementById("prompt-input").value.trim();
-      if (!prompt) return alert("Please enter a prompt.");
+    let sketchCanvas = null;
 
-      document.getElementById("code-output").innerText = "Loading...";
+    async function generate() {
+      const prompt = document.getElementById("promptInput").value.trim();
+      if (!prompt) {
+        alert("Please enter a prompt.");
+        return;
+      }
+
+      document.getElementById("output").textContent = "⏳ Generating with Groq...";
 
       try {
-        const res = await fetch(REPLIT_API, {
+        const res = await fetch(BACKEND_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt })
         });
 
         const data = await res.json();
-        const p5code = data.code || "// No code returned";
-
-        document.getElementById("code-output").innerText = p5code;
-
-        // Render it in the iframe
-        const html = `
-          <html>
-          <head>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-          </head>
-          <body>
-            <script type="text/javascript">
-              ${p5code}
-            </script>
-          </body>
-          </html>
-        `;
-
-        const iframe = document.getElementById("canvas-frame");
-        iframe.srcdoc = html;
-
-      } catch (e) {
-        console.error(e);
-        document.getElementById("code-output").innerText = "Error generating code.";
+        if (data.code) {
+          document.getElementById("output").textContent = "✅ Loaded. Executing code...";
+          runP5Sketch(data.code);
+        } else {
+          document.getElementById("output").textContent = "❌ Failed to generate code.";
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("output").textContent = "❌ Error connecting to server.";
       }
     }
-  </script>
 
+    function runP5Sketch(code) {
+      // Remove previous canvas if any
+      if (sketchCanvas) {
+        sketchCanvas.remove();
+      }
+
+      // Create a new sketch
+      const sketch = new Function('p', `
+        ${code}
+      `);
+
+      sketchCanvas = new p5(sketch);
+    }
+  </script>
 </body>
 </html>
